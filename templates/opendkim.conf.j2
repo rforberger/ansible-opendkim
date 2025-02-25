@@ -1,0 +1,22 @@
+Mode sv
+
+Socket local:/var/spool/postfix/opendkim/opendkim.sock
+
+UserID opendkim:opendkim
+UMask 002
+
+PidFile /run/opendkim/opendkim.pid
+
+# Specify the list of keys
+KeyTable file:/etc/dkimkeys/keytable
+# Match keys and domains. To use regular expressions in the file, use refile: instead of file:
+SigningTable refile:/etc/dkimkeys/signingtable
+# Match a list of hosts whose messages will be signed. By default, only localhost is considered as internal host.
+InternalHosts refile:/etc/dkimkeys/trustedhosts
+
+Canonicalization    relaxed/simple
+On-BadSignature     accept
+
+SignatureAlgorithm      rsa-sha256
+
+OversignHeaders         From

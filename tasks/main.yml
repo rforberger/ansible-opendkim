@@ -1,0 +1,47 @@
+---
+
+- name: install pkgs
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - opendkim
+
+- name: Create dkimkeys directory
+  ansible.builtin.file:
+    path: "/etc/dkimkeys"
+    state: directory
+    mode: 0700
+    owner: opendkim
+    group: opendkim
+
+- name: Generate DKIM key pair
+  ansible.builtin.shell:
+    cmd: "opendkim-genkey -D /etc/dkimkeys -d {{ item.domain }} -s {{ item.selector }}.{{ item.domain }} && chown opendkim:opendkim /etc/dkimkeys/{{ item.selector }}.{{ item.domain }}.private"
+    creates: "/etc/dkimkeys/{{ item.selector }}.{{ item.domain }}.private"
+  loop:
+    - { domain: "ronnyforberger.de", selector: "2022" }
+    - { domain: "ronnyforberger.business", selector: "2023" }
+    - { domain: "forberger-online.de", selector: "2023" }
+
+- name: Create opendkim.conf
+  ansible.builtin.template:
+    src: "opendkim.conf.j2"
+    dest: "/etc/opendkim.conf"
+  notify:
+    - restart opendkim
+
+- name: Create opendkim configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/dkimkeys/{{ item.dest }}"
+  loop:
+    - { src: "keytable.j2", dest: "keytable" }
+    - { src: "signingtable.j2", dest: "signingtable" }
+    - { src: "trustedhosts.j2", dest: "trustedhosts" }
+  notify:
+    - restart opendkim
+
+
+
